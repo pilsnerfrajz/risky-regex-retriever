@@ -2,12 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 parser = 'html.parser'
 
-requests.post("http://Github.com/", data = { 
-    'username': '123456', 
-    'plate': '123456', 
-    'password': 'olk2', 
-    'password2': 'olk2' })
+res = requests.get("https://github.com/search?q=topic:web language:JavaScript&type=repositories&ref=advsearch", data = {})
+print(res)
 
-
-if __name__ == "__main__":
+#if __name__ == "__main__":
     #TODO add function
