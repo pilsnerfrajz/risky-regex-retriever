@@ -3,6 +3,8 @@ from bs4 import BeautifulSoup
 import os
 from dotenv import load_dotenv
 import json
+from urllib.parse import quote
+import time
 
 parser = 'html.parser'
 
@@ -33,10 +35,24 @@ def get_repos():
 		for url in urls:
 			f.write(url + "\n")
 
-	
-
 def get_files():
-    with open("search_results.txt", "r") as f:
+	base = 'https://api.github.com/search/code?q='
+	#repo = ' repo:webpack/webpack'
+	filter = '.test OR .match OR RegExp OR .exec in:file language:JavaScript'
+	repo_list = []
+	with open("search_results.txt", "r") as f:
+		repo_list = [line.strip() for line in f if line.strip()]
+	
+	for repo in repo_list:
+		url = base + quote(filter) + ' repo:' + repo
+		print(url)
+		name = repo.replace("/", "") + ".json"
+		with open("outputs/" + name, "w") as f:
+			r = requests.get(url, headers=headers)
+			time.sleep(6.5)
+			f.write(r.text)
+
+"""with open("search_results.txt", "r") as f:
         repo_list = [line.strip() for line in f if line.strip()]
 
     # Pattern to search in each repo
@@ -57,6 +73,7 @@ def get_files():
         if r.status_code == 200:
             results = json.loads(r.text)
             print(results)
+"""
 
 """def get_files():
 	with open("search_results.txt", "r") as f:
@@ -67,5 +84,5 @@ def get_files():
 			break"""
 
 if __name__ == "__main__":
-	get_repos()
-	#get_files()
+	#get_repos()
+	get_files()
