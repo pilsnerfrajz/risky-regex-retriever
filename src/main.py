@@ -1,11 +1,17 @@
 import requests
 from bs4 import BeautifulSoup
+import os
+from dotenv import load_dotenv
 
 url = "https://github.com/search?q=topic:web+language:JavaScript&type=repositories&ref=advsearch"
 
-# GitHub might block some bots, so set a User-Agent header
+load_dotenv()  # Load from .env
+
+token = os.getenv("GITHUB_TOKEN")
+
 headers = {
-    "User-Agent": "Mozilla/5.0"
+    "Authorization": f"token {token}",
+    "User-Agent": "MyCrawler/1.0"
 }
 
 res = requests.get(url, headers=headers)
