@@ -2,44 +2,37 @@ import requests
 from bs4 import BeautifulSoup
 import os
 from dotenv import load_dotenv
+import json
 
 parser = 'html.parser'
 
-filter_url = "https://github.com/search?q=topic:web+language:JavaScript&type=repositories&ref=advsearch&p=1"
-repo_filter = " (\".match(\" OR \".test(\" OR \"regex(\" OR \"RegExp(\" OR \".exec(\") language%3AJavaScript&type=code"
+filter_url = "https://api.github.com/search/repositories?q=topic:web+language:JavaScript"
+repo_filter = "%20(%22.match(%22%20OR%20%22.test(%22%20OR%20%22regex(%22%20OR%20%22RegExp(%22%20OR%20%22.exec(%22)%20language%3AJavaScript&type=code"
 
-load_dotenv()  # Load from .env
+load_dotenv("token.env")  # Load from .env
 
 token = os.getenv("GITHUB_TOKEN")
 
 headers = {
 	"Authorization": f"token {token}",
-	"User-Agent": "MyCrawler/1.0"
+	"User-Agent": "RegexCrawler/1.0",
+	"X-GitHub-Api-Version": "2022-11-28"
 }
 
 def get_repos():
 	r = requests.get(filter_url, headers=headers)
-
-	repo_links = set()
-
-	matches = []
-	for line in r.text.splitlines():
-		if line.startswith('</style><h1 class="sr-only">repositories Search Results'):
-			matches.append(line)
-			soup = BeautifulSoup(line, parser)
-			
-			# Now extract links
-			for a in soup.find_all("a", href=True):
-				href = a["href"]
-				if href.startswith("/") and href.count("/") == 2 and not href.startswith("/search") and not href.startswith("/topics"):
-					full_url = href[1:] # remove first slash
-					repo_links.add(full_url)
-
+	
+	if r.status_code == 404:
+		print("404 not found")	
+		return
+	
+	data = json.loads(r.text)
+	urls = [item["html_url"] for item in data["items"]]
 	with open("search_results.txt", "w") as f:
-		for link in sorted(repo_links):
-			f.write(link + "\n")
-	print(repo_links)
-	print(f"Found {len(repo_links)} unique repository links.")
+		for url in urls:
+			f.write(url + "\n")
+
+	
 
 def get_files():
 	with open("search_results.txt", "r") as f:
@@ -50,5 +43,5 @@ def get_files():
 			break
 
 if __name__ == "__main__":
-	#get_repos()
-	get_files()
+	get_repos()
+	#get_files()
