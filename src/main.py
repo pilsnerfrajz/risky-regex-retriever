@@ -71,13 +71,21 @@ def get_regexes():
 						get_req = "https://api.github.com/repos/" + repo + "/contents/" + path
 						content_req = requests.get(get_req, headers=content_headers)
 						# TODO FIX REGEX
-						regex = r'(?: /(?!\*\*|\/).*?/)|(?:\"/(?!\*\*|\/).*?/\")|(?:\'/(?!\*\*|\/).*?/\')'
+						#regex = r'( /(?!\*\*|\/).*?/)'#|(?:\"/(?!\*\*|\/).*?/\")|(?:\'/(?!\*\*|\/).*?/\')'
+						regex = r'/(?!\*\*|\/).*?/'
 						regex_list = re.findall(regex, content_req.text)
 						fix = set(regex_list)
+						for reg in fix:
+							try:
+								re.compile(reg)
+							except re.error:
+								fix.discard(reg)
+
 						if len(regex_list) != 0:
 							print(regex_list)
 							f.write(re_function + " " + repo + path + "\n")
 							f.write("\n".join(fix) + "\n" + "\n")
+					
 					
 					end = time.time()
 					# Avoid rate limiting
@@ -87,5 +95,5 @@ def get_regexes():
 					continue
 
 if __name__ == "__main__":
-	#get_repos()
+	get_repos()
 	get_regexes()
