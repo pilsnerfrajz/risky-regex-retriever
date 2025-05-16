@@ -23,6 +23,13 @@ headers = {
 	"X-GitHub-Api-Version": "2022-11-28"
 }
 
+content_headers = {
+		"Accept": "application/vnd.github.raw+json",
+		"Authorization": f"token {token}",
+		"User-Agent": "RegexCrawler/1.0",
+		"X-GitHub-Api-Version": "2022-11-28"
+	}	
+
 def get_repos():
 	r = requests.get(filter_url, headers=headers)
 	
@@ -38,49 +45,46 @@ def get_repos():
 
 def get_regexes():
 	base = 'https://api.github.com/search/code?q='
-	# TODO Iterate through filters to get more results
-	search_filter = '.match in:file language:JavaScript'
+	search_filter = ' in:file language:JavaScript'
 	repo_list = []
 	with open("search_results.txt", "r") as f:
 		repo_list = [line.strip() for line in f if line.strip()]
-	
-	content_headers = {
-		"Accept": "application/vnd.github.raw+json",
-		"Authorization": f"token {token}",
-		"User-Agent": "RegexCrawler/1.0",
-		"X-GitHub-Api-Version": "2022-11-28"
-	}	
-	
+		
+	filter_code = [".match", ".exec", "RegExp", ".test"]
 	with open("regex_results.txt", "w", encoding="utf-8") as f:
-		for repo in repo_list:
-			seen = set()
-			url = base + quote(search_filter) + ' repo:' + repo
-			r = requests.get(url, headers=headers)
+		for re_function in filter_code:
+			for repo in repo_list:
+				seen = set()
+				url = base + re_function + quote(search_filter) + ' repo:' + repo
+				r = requests.get(url, headers=headers)
+				print(url)
+				start = time.time()
+				
+				try:
+					data = json.loads(r.text)
 
-			start = time.time()
-			
-			data = json.loads(r.text)
-			paths = [item["path"] for item in data["items"]]
-			for path in paths:
-				if path in seen:
-					break
-				seen.add(path)
-				get_req = "https://api.github.com/repos/" + repo + "/contents/" + path
-				content_req = requests.get(get_req, headers=content_headers)
-				regex = r'(?: /(?!\*\*|\/).*?/)|(?:\"/(?!\*\*|\/).*?/\" )|(?:\'/(?!\*\*|\/).*?/\')'
-				regex_list = re.findall(regex, content_req.text)
-				fix = set(regex_list)
-				if len(regex_list) != 0:
-					print(regex_list)
-					f.write(repo + path + "\n")
-					f.write("\n".join(fix) + "\n" + "\n")
-			
-			end = time.time()
-			# Avoid rate limiting
-			if end - start < 6:
-				time.sleep(end-start)
-			
-			return # TODO Remove
+					paths = [item["path"] for item in data["items"]]
+					for path in paths:
+						if path in seen:
+							break
+						seen.add(path)
+						get_req = "https://api.github.com/repos/" + repo + "/contents/" + path
+						content_req = requests.get(get_req, headers=content_headers)
+						# TODO FIX REGEX
+						regex = r'(?: /(?!\*\*|\/).*?/)|(?:\"/(?!\*\*|\/).*?/\")|(?:\'/(?!\*\*|\/).*?/\')'
+						regex_list = re.findall(regex, content_req.text)
+						fix = set(regex_list)
+						if len(regex_list) != 0:
+							print(regex_list)
+							f.write(re_function + " " + repo + path + "\n")
+							f.write("\n".join(fix) + "\n" + "\n")
+					
+					end = time.time()
+					# Avoid rate limiting
+					if end - start < 6:
+						time.sleep(end-start)
+				except:
+					continue
 
 if __name__ == "__main__":
 	#get_repos()
