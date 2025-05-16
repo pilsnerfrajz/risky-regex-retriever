@@ -50,22 +50,37 @@ def get_regexes():
 		"User-Agent": "RegexCrawler/1.0",
 		"X-GitHub-Api-Version": "2022-11-28"
 	}	
+	
+	with open("regex_results.txt", "w", encoding="utf-8") as f:
+		for repo in repo_list:
+			seen = set()
+			url = base + quote(search_filter) + ' repo:' + repo
+			r = requests.get(url, headers=headers)
 
-	for repo in repo_list:
-		url = base + quote(search_filter) + ' repo:' + repo
-		r = requests.get(url, headers=headers)
-		time.sleep(6.5)
-		data = json.loads(r.text)
-		paths = [item["path"] for item in data["items"]]
-		for path in paths:
-			get_req = "https://api.github.com/repos/" + repo + "/contents/" + path
-			content_req = requests.get(get_req, headers=content_headers)
-			regex = r'(?: /(?!\*\*|\/).*?/)|(?:\"/(?!\*\*|\/).*?/\" )|(?:\'/(?!\*\*|\/).*?/\')'
-			regex_list = re.findall(regex, content_req.text)
-			if len(regex_list) != 0: #TODO Log instead of print
-				print(path)
-				print(regex_list)
-		return # TODO Remove
+			start = time.time()
+			
+			data = json.loads(r.text)
+			paths = [item["path"] for item in data["items"]]
+			for path in paths:
+				if path in seen:
+					break
+				seen.add(path)
+				get_req = "https://api.github.com/repos/" + repo + "/contents/" + path
+				content_req = requests.get(get_req, headers=content_headers)
+				regex = r'(?: /(?!\*\*|\/).*?/)|(?:\"/(?!\*\*|\/).*?/\" )|(?:\'/(?!\*\*|\/).*?/\')'
+				regex_list = re.findall(regex, content_req.text)
+				fix = set(regex_list)
+				if len(regex_list) != 0:
+					print(regex_list)
+					f.write(repo + path + "\n")
+					f.write("\n".join(fix) + "\n" + "\n")
+			
+			end = time.time()
+			# Avoid rate limiting
+			if end - start < 6:
+				time.sleep(end-start)
+			
+			return # TODO Remove
 
 if __name__ == "__main__":
 	#get_repos()
