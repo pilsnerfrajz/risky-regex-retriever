@@ -53,47 +53,56 @@ def get_regexes():
 	filter_code = [".match", ".exec", "RegExp", ".test"]
 	with open("regex_results.txt", "w", encoding="utf-8") as f:
 		for re_function in filter_code:
+			print("\n" + re_function)
 			for repo in repo_list:
+				print("\nScanning " + repo)
 				seen = set()
 				url = base + re_function + quote(search_filter) + ' repo:' + repo
 				r = requests.get(url, headers=headers)
-				print(url)
+
 				start = time.time()
-				
 				try:
 					data = json.loads(r.text)
 
 					paths = [item["path"] for item in data["items"]]
+					if len(paths) == 0:
+						print("\tFound nothing...")
+
 					for path in paths:
+						print("\tFile: " + path)
 						if path in seen:
 							break
 						seen.add(path)
 						get_req = "https://api.github.com/repos/" + repo + "/contents/" + path
 						content_req = requests.get(get_req, headers=content_headers)
-						# TODO FIX REGEX
+						# TODO FIX FUTUREWARNINGS FROM REGEX ENGINE
 						#regex = r'( /(?!\*\*|\/).*?/)'#|(?:\"/(?!\*\*|\/).*?/\")|(?:\'/(?!\*\*|\/).*?/\')'
 						regex = r'/(?!\*\*|\/).*?/'
 						regex_list = re.findall(regex, content_req.text)
-						fix = set(regex_list)
-						for reg in fix:
-							try:
-								re.compile(reg)
-							except re.error:
-								fix.discard(reg)
+						unique_regexes = set(regex_list)
+						valid_regexes = [reg for reg in unique_regexes if is_valid_regex(reg)]
 
-						if len(regex_list) != 0:
-							print(regex_list)
+						if len(valid_regexes) != 0:
+							print("\tFound unique and valid regexes")
 							f.write(re_function + " " + repo + path + "\n")
-							f.write("\n".join(fix) + "\n" + "\n")
+							f.write("\n".join(valid_regexes) + "\n" + "\n")
 					
-					
-					end = time.time()
-					# Avoid rate limiting
-					if end - start < 6:
-						time.sleep(end-start)
-				except:
-					continue
+				except KeyError:
+					print("\tFound nothing...")
+
+				end = time.time()
+				# Avoid rate limiting
+				if end - start < 6:
+					print("\tSleeping for " + str(6 - (end - start)))
+					time.sleep(6 - (end - start))
+
+def is_valid_regex(regex):
+	try:
+		re.compile(regex)
+		return True
+	except re.error:
+		return False
 
 if __name__ == "__main__":
-	get_repos()
+	#get_repos()
 	get_regexes()
