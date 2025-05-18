@@ -129,11 +129,6 @@ def validate_regexes():
 				data = json.loads(detector_output.stdout)
 				opinions = data.get("detectorOpinions", [])
 
-				safe_count = sum(1 for opinion in opinions if opinion.get("opinion", {}).get("isSafe") == 1)
-				unsafe_count = sum(1 for opinion in opinions if opinion.get("opinion", {}).get("isSafe") == 0)
-				unknown_count = sum(1 for opinion in opinions if opinion.get("opinion", {}).get("isSafe") not in (0,1))
-
-				total = len(opinions)
 				unsafe_count = sum(1 for o in opinions if o.get("opinion", {}).get("isSafe") == 0)
 				safe_count = sum(1 for o in opinions if o.get("opinion", {}).get("isSafe") == 1)
 
