@@ -162,3 +162,4 @@ cython_debug/
 
 outputs
 src/node_modules
+vuln-regex-detector/
