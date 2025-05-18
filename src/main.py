@@ -6,6 +6,7 @@ import json
 from urllib.parse import quote
 import time
 import re
+import subprocess
 
 parser = 'html.parser'
 
@@ -103,6 +104,42 @@ def is_valid_regex(regex):
 	except re.error:
 		return False
 
+def validate_regexes():
+	with open("regex_results.txt", "r") as f:
+		for line in f:
+			line = line.strip()
+			#TODO ADJUST THIS IF-STATEMENT
+			if line.startswith("Repo") or line == "":
+				continue
+			#line = "(a+)+$"
+
+			with open("temp.json", "w") as temp:
+				temp.write("{\"pattern\":\"" + line + "\", \"timeLimit\": 10, \"memoryLimit\": 1024}")
+			# Run vuln-regex-detector
+			detector_output = subprocess.run(["vuln-regex-detector/src/detect/detect-vuln.pl", "temp.json"], capture_output=True, text=True)
+			if detector_output.returncode != 0:
+				continue
+			
+			data = json.loads(detector_output.stdout)
+			opinions = data.get("detectorOpinions", [])
+
+			safe_count = sum(1 for opinion in opinions if opinion.get("opinion", {}).get("isSafe") == 1)
+			unsafe_count = sum(1 for opinion in opinions if opinion.get("opinion", {}).get("isSafe") == 0)
+			unknown_count = sum(1 for opinion in opinions if opinion.get("opinion", {}).get("isSafe") not in (0,1))
+
+			total = len(opinions)
+			unsafe_count = sum(1 for o in opinions if o.get("opinion", {}).get("isSafe") == 0)
+			safe_count = sum(1 for o in opinions if o.get("opinion", {}).get("isSafe") == 1)
+
+			if unsafe_count > safe_count:
+				print(f"❌ Regex pattern {line} is unsafe!")
+			else:
+				print(f"✅ Regex pattern {line} is probably safe.")
+
+			#return
+	subprocess.run(["rm", "temp.json"])
+
 if __name__ == "__main__":
 	#get_repos()
-	get_regexes()
+	#get_regexes()
+	validate_regexes()
