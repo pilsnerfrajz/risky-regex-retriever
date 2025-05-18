@@ -85,7 +85,7 @@ def get_regexes():
 
 						if len(valid_regexes) != 0:
 							print("\tFound unique and valid regexes")
-							f.write("Repo " + re_function + " " + repo + path + "\n")
+							f.write("Repo " + re_function + " " + repo + "/" + path + "\n")
 							f.write("\n".join(valid_regexes) + "\n" + "\n")
 					
 				except KeyError:
