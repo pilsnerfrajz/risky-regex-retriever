@@ -117,10 +117,19 @@ def validate_regexes():
 					continue
 				if line == "":
 					continue
+				
 				#line = "/(a+)+$/"
 
-				with open("temp.json", "w") as temp:
-					temp.write("{\"pattern\":\"" + line + "\", \"timeLimit\": 10, \"memoryLimit\": 1024}")
+				# Escape \ to \\ for patterns like /^([^<>]|<[^<>]*>)*>\s*\(/
+				escaped_pattern = line.encode('unicode_escape').decode()  # Escapes \ to \\ for JSON
+				json_data = {
+					"pattern": escaped_pattern,
+					"timeLimit": 10,
+					"memoryLimit": 1024
+				}
+				with open("temp.json", "w") as f:
+					json.dump(json_data, f)
+
 				# Run vuln-regex-detector
 				detector_output = subprocess.run(["vuln-regex-detector/src/detect/detect-vuln.pl", "temp.json"], capture_output=True, text=True)
 				if detector_output.returncode != 0:
@@ -138,7 +147,6 @@ def validate_regexes():
 				else:
 					print(f"✅ Regex pattern {line} is probably safe.")
 
-				#return
 	subprocess.run(["rm", "temp.json"])
 
 if __name__ == "__main__":
