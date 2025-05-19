@@ -10,7 +10,7 @@ import subprocess
 
 parser = 'html.parser'
 
-filter_url = "https://api.github.com/search/repositories?q=topic:web+language:JavaScript"
+filter_url = "https://api.github.com/search/repositories?q=topic:web+language:JavaScript&page="
 repo_filter = "%20(%22.match(%22%20OR%20%22.test(%22%20OR%20%22regex(%22%20OR%20%22RegExp(%22%20OR%20%22.exec(%22)%20language%3AJavaScript&type=code"
 
 load_dotenv("token.env")  # Load from .env
@@ -32,17 +32,18 @@ content_headers = {
 	}	
 
 def get_repos():
-	r = requests.get(filter_url, headers=headers)
-	
-	if r.status_code == 404:
-		print("404 not found")	
-		return
-	
-	data = json.loads(r.text)
-	urls = [item["full_name"] for item in data["items"]]
 	with open("search_results.txt", "w") as f:
-		for url in urls:
-			f.write(url + "\n")
+		for i in range(1,10):
+			r = requests.get(filter_url + str(i), headers=headers)
+			
+			if r.status_code == 404:
+				print("404 not found")	
+				return
+			
+			data = json.loads(r.text)
+			urls = [item["full_name"] for item in data["items"]]
+			for url in urls:
+				f.write(url + "\n")
 
 def get_regexes():
 	base = 'https://api.github.com/search/code?q='
@@ -150,6 +151,6 @@ def validate_regexes():
 	subprocess.run(["rm", "temp.json"])
 
 if __name__ == "__main__":
-	#get_repos()
+	get_repos()
 	#get_regexes()
-	validate_regexes()
+	#validate_regexes()
