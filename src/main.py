@@ -52,6 +52,7 @@ def get_regexes():
 	with open("search_results.txt", "r") as f:
 		repo_list = [line.strip() for line in f if line.strip()]
 		
+	regex_set = set()
 	filter_code = [".match", ".exec", "RegExp", ".test"]
 	with open("regex_results.txt", "w", encoding="utf-8") as f:
 		for re_function in filter_code:
@@ -83,7 +84,7 @@ def get_regexes():
 						regex_list = re.findall(regex, content_req.text)
 						unique_regexes = set(regex_list)
 						valid_regexes = [reg for reg in unique_regexes if is_valid_regex(reg)]
-
+						regex_set.update(set(valid_regexes)-regex_set)
 						if len(valid_regexes) != 0:
 							print("\tFound unique and valid regexes")
 							f.write("Repo " + re_function + " " + repo + "/" + path + "\n")
@@ -97,6 +98,10 @@ def get_regexes():
 				if end - start < 6:
 					print("\tSleeping for " + str(6 - (end - start)))
 					time.sleep(6 - (end - start))
+	with open("set_of_regex.txt", "w") as f:
+		for regex in regex_set:
+			f.write(regex + "\n")
+
 
 def is_valid_regex(regex):
 	try:
@@ -107,8 +112,8 @@ def is_valid_regex(regex):
 
 def validate_regexes():
 	repo = ""
-	with open("unsafe-regexes.txt", "w") as unsafe_file:
-		with open("regex_results.txt", "r") as f:
+	with open("unsafe-regexes_checked.txt", "w") as unsafe_file:
+		with open("unsafe_regexes.txt", "r") as f:
 			for line in f:
 				line = line.strip()
 				#TODO ADJUST THIS IF-STATEMENT
@@ -125,8 +130,8 @@ def validate_regexes():
 				escaped_pattern = line.encode('unicode_escape').decode()  # Escapes \ to \\ for JSON
 				json_data = {
 					"pattern": escaped_pattern,
-					"timeLimit": 10,
-					"memoryLimit": 1024
+					"timeLimit": 60,
+					"memoryLimit": 4096
 				}
 				with open("temp.json", "w") as f:
 					json.dump(json_data, f)
@@ -144,13 +149,13 @@ def validate_regexes():
 
 				if unsafe_count > safe_count:
 					print(f"❌ Regex pattern {line} is unsafe!")
-					unsafe_file.write(line + " " + repo)
+					unsafe_file.write(line + " " + repo + "\n")
 				else:
 					print(f"✅ Regex pattern {line} is probably safe.")
 
 	subprocess.run(["rm", "temp.json"])
 
 if __name__ == "__main__":
-	get_repos()
-	#get_regexes()
-	#validate_regexes()
+	#get_repos()
+	get_regexes()
+	validate_regexes()
