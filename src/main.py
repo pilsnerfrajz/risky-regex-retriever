@@ -98,7 +98,7 @@ def get_regexes():
 				if end - start < 6:
 					print("\tSleeping for " + str(6 - (end - start)))
 					time.sleep(6 - (end - start))
-	with open("set_of_regex.txt", "w") as f:
+	with open("set_of_regex.txt", "w", encoding="utf-8") as f:
 		for regex in regex_set:
 			f.write(regex + "\n")
 
@@ -112,17 +112,10 @@ def is_valid_regex(regex):
 
 def validate_regexes():
 	repo = ""
-	with open("unsafe-regexes_checked.txt", "w") as unsafe_file:
-		with open("unsafe_regexes.txt", "r") as f:
+	with open("output_of_validate.txt", "w") as unsafe_file:
+		with open("set_of_regex.txt", "r") as f:
 			for line in f:
 				line = line.strip()
-				#TODO ADJUST THIS IF-STATEMENT
-				if line.startswith("Repo"):
-					split = line.split(" ")
-					repo = split[2]
-					continue
-				if line == "":
-					continue
 				
 				#line = "/(a+)+$/"
 
@@ -131,7 +124,7 @@ def validate_regexes():
 				json_data = {
 					"pattern": escaped_pattern,
 					"timeLimit": 60,
-					"memoryLimit": 4096
+					"memoryLimit": 8192
 				}
 				with open("temp.json", "w") as f:
 					json.dump(json_data, f)
@@ -144,12 +137,14 @@ def validate_regexes():
 				data = json.loads(detector_output.stdout)
 				opinions = data.get("detectorOpinions", [])
 
-				unsafe_count = sum(1 for o in opinions if o.get("opinion", {}).get("isSafe") == 0)
-				safe_count = sum(1 for o in opinions if o.get("opinion", {}).get("isSafe") == 1)
+				unsafe_count = sum(1 for o in opinions if o.get("opinion", {}) != "TIMEOUT" and (o.get("opinion", {}).get("isSafe") == 0 or o.get("opinion", {}).get("isSafe") == "false")) / 2
+				
+				safe_count = sum(1 for o in opinions if o.get("opinion", {}) != "TIMEOUT" and (o.get("opinion", {}).get("isSafe") == 1 or o.get("opinion", {}).get("isSafe") == "true")) / 2
 
 				if unsafe_count > safe_count:
 					print(f"❌ Regex pattern {line} is unsafe!")
-					unsafe_file.write(line + " " + repo + "\n")
+					unsafe_file.write(line + "\n")
+					unsafe_file.write(detector_output.stdout + "\n")
 				else:
 					print(f"✅ Regex pattern {line} is probably safe.")
 
@@ -157,5 +152,5 @@ def validate_regexes():
 
 if __name__ == "__main__":
 	#get_repos()
-	get_regexes()
+	#get_regexes()
 	validate_regexes()
