@@ -1,3 +1,0 @@
-/(\s?[^\!\?\.]+[\!\?\.])+/ WebKit/WebKitJSTests/mozilla/js1_2/regexp/everything.js
-/\.\w{2,8}($|\?)+/ totaljs/frameworkutils.js
-/helpers\.[a-z0-9A-Z_$]+\(.*?\)+/ totaljs/frameworkinternal.js
