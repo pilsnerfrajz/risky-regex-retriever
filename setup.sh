@@ -20,7 +20,11 @@ echo "Running configuration script..."
 ./configure
 
 echo "Creating output directory..."
+cd ..
 mkdir outputs
+
+echo "Creating token file..."
+ls token.env > /dev/null 2>&1 || echo "GITHUB_TOKEN=" > token.env
 
 echo "\nCreate a virtual environment and install dependencies with:"
 echo "    python3 -m venv env/rrr"
