@@ -19,9 +19,12 @@ echo "Environment variable is set to ${VULN_REGEX_DETECTOR_ROOT}"
 echo "Running configuration script..."
 ./configure
 
+echo "Creating output directory..."
+mkdir outputs
+
 echo "\nCreate a virtual environment and install dependencies with:"
-echo "    python3 -m venv env/redos"
-echo "    source env/redos/bin/activate"
+echo "    python3 -m venv env/rrr"
+echo "    source env/rrr/bin/activate"
 echo "    pip3 install -r requirements.txt"
 
 echo "Run scanner with:"
