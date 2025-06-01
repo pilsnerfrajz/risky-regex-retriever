@@ -1,5 +1,4 @@
 import requests
-from bs4 import BeautifulSoup
 import os
 from dotenv import load_dotenv
 import json
@@ -13,10 +12,10 @@ parser = 'html.parser'
 filter_url = "https://api.github.com/search/repositories?q=topic:web+language:JavaScript&page="
 repo_filter = "%20(%22.match(%22%20OR%20%22.test(%22%20OR%20%22regex(%22%20OR%20%22RegExp(%22%20OR%20%22.exec(%22)%20language%3AJavaScript&type=code"
 
-load_dotenv("token.env")  # Load from .env
-
+load_dotenv("token.env")
 token = os.getenv("GITHUB_TOKEN")
 
+# Headers used when filtering repos
 headers = {
 	"Accept": "application/vnd.github+json",
 	"Authorization": f"token {token}",
@@ -24,12 +23,13 @@ headers = {
 	"X-GitHub-Api-Version": "2022-11-28"
 }
 
+# Headers used when fetching files from repos
 content_headers = {
-		"Accept": "application/vnd.github.raw+json",
-		"Authorization": f"token {token}",
-		"User-Agent": "RegexCrawler/1.0",
-		"X-GitHub-Api-Version": "2022-11-28"
-	}	
+	"Accept": "application/vnd.github.raw+json",
+	"Authorization": f"token {token}",
+	"User-Agent": "RegexCrawler/1.0",
+	"X-GitHub-Api-Version": "2022-11-28"
+}	
 
 def get_repos():
 	with open("outputs/search_results.txt", "w") as f:
@@ -41,9 +41,9 @@ def get_repos():
 				return
 			
 			data = json.loads(r.text)
-			urls = [item["full_name"] for item in data["items"]]
-			for url in urls:
-				f.write(url + "\n")
+			repos = [item["full_name"] for item in data["items"]]
+			for repo in repos:
+				f.write(repo + "\n")
 
 def get_regexes():
 	base = 'https://api.github.com/search/code?q='
@@ -57,6 +57,7 @@ def get_regexes():
 	with open("outputs/regex_results.txt", "w", encoding="utf-8") as f:
 		for re_function in filter_code:
 			print("\n" + re_function)
+			
 			for repo in repo_list:
 				print("\nScanning " + repo)
 				seen = set()
@@ -73,18 +74,22 @@ def get_regexes():
 
 					for path in paths:
 						print("\tFile: " + path)
+						
+						# Skip file if it has already been checked
 						if path in seen:
 							break
 						seen.add(path)
+						
 						get_req = "https://api.github.com/repos/" + repo + "/contents/" + path
 						content_req = requests.get(get_req, headers=content_headers)
-						# TODO FIX FUTUREWARNINGS FROM REGEX ENGINE
-						#regex = r'( /(?!\*\*|\/).*?/)'#|(?:\"/(?!\*\*|\/).*?/\")|(?:\'/(?!\*\*|\/).*?/\')'
+						
+						# Extract all patterns resembling regexes except those that start with //
 						regex = r'/(?!\*\*|\/).*?/'
 						regex_list = re.findall(regex, content_req.text)
 						unique_regexes = set(regex_list)
 						valid_regexes = [reg for reg in unique_regexes if is_valid_regex(reg)]
 						regex_set.update(set(valid_regexes)-regex_set)
+						
 						if len(valid_regexes) != 0:
 							print("\tFound unique and valid regexes")
 							f.write("Repo " + re_function + " " + repo + "/" + path + "\n")
@@ -94,10 +99,13 @@ def get_regexes():
 					print("\tFound nothing...")
 
 				end = time.time()
+				
 				# Avoid rate limiting
 				if end - start < 6:
 					print("\tSleeping for " + str(6 - (end - start)))
 					time.sleep(6 - (end - start))
+
+	# Save all unique regexes to a file
 	with open("outputs/set_of_regex.txt", "w", encoding="utf-8") as f:
 		for regex in regex_set:
 			f.write(regex + "\n")
@@ -111,16 +119,13 @@ def is_valid_regex(regex):
 		return False
 
 def validate_regexes():
-	repo = ""
 	with open("outputs/output_of_validate.txt", "w") as unsafe_file:
 		with open("outputs/set_of_regex.txt", "r") as f:
 			for line in f:
 				line = line.strip()
-				
-				#line = "/(a+)+$/"
 
 				# Escape \ to \\ for patterns like /^([^<>]|<[^<>]*>)*>\s*\(/
-				escaped_pattern = line.encode('unicode_escape').decode()  # Escapes \ to \\ for JSON
+				escaped_pattern = line.encode('unicode_escape').decode()
 				json_data = {
 					"pattern": escaped_pattern,
 					"timeLimit": 60,
@@ -138,7 +143,6 @@ def validate_regexes():
 				opinions = data.get("detectorOpinions", [])
 
 				unsafe_count = sum(1 for o in opinions if o.get("opinion", {}) != "TIMEOUT" and (o.get("opinion", {}).get("isSafe") == 0 or o.get("opinion", {}).get("isSafe") == "false")) / 2
-				
 				safe_count = sum(1 for o in opinions if o.get("opinion", {}) != "TIMEOUT" and (o.get("opinion", {}).get("isSafe") == 1 or o.get("opinion", {}).get("isSafe") == "true")) / 2
 
 				if unsafe_count > safe_count:
