@@ -32,7 +32,7 @@ content_headers = {
 	}	
 
 def get_repos():
-	with open("search_results.txt", "w") as f:
+	with open("outputs/search_results.txt", "w") as f:
 		for i in range(1,10):
 			r = requests.get(filter_url + str(i), headers=headers)
 			
@@ -54,7 +54,7 @@ def get_regexes():
 		
 	regex_set = set()
 	filter_code = [".match", ".exec", "RegExp", ".test"]
-	with open("regex_results.txt", "w", encoding="utf-8") as f:
+	with open("outputs/regex_results.txt", "w", encoding="utf-8") as f:
 		for re_function in filter_code:
 			print("\n" + re_function)
 			for repo in repo_list:
@@ -98,7 +98,7 @@ def get_regexes():
 				if end - start < 6:
 					print("\tSleeping for " + str(6 - (end - start)))
 					time.sleep(6 - (end - start))
-	with open("set_of_regex.txt", "w", encoding="utf-8") as f:
+	with open("outputs/set_of_regex.txt", "w", encoding="utf-8") as f:
 		for regex in regex_set:
 			f.write(regex + "\n")
 
@@ -112,8 +112,8 @@ def is_valid_regex(regex):
 
 def validate_regexes():
 	repo = ""
-	with open("output_of_validate.txt", "w") as unsafe_file:
-		with open("set_of_regex.txt", "r") as f:
+	with open("outputs/output_of_validate.txt", "w") as unsafe_file:
+		with open("outputs/set_of_regex.txt", "r") as f:
 			for line in f:
 				line = line.strip()
 				
@@ -126,11 +126,11 @@ def validate_regexes():
 					"timeLimit": 60,
 					"memoryLimit": 8192
 				}
-				with open("temp.json", "w") as f:
+				with open("outputs/temp.json", "w") as f:
 					json.dump(json_data, f)
 
 				# Run vuln-regex-detector
-				detector_output = subprocess.run(["vuln-regex-detector/src/detect/detect-vuln.pl", "temp.json"], capture_output=True, text=True)
+				detector_output = subprocess.run(["vuln-regex-detector/src/detect/detect-vuln.pl", "outputs/temp.json"], capture_output=True, text=True)
 				if detector_output.returncode != 0:
 					continue
 				
@@ -148,9 +148,9 @@ def validate_regexes():
 				else:
 					print(f"✅ Regex pattern {line} is probably safe.")
 
-	subprocess.run(["rm", "temp.json"])
+	subprocess.run(["rm", "outputs/temp.json"])
 
 if __name__ == "__main__":
-	#get_repos()
-	#get_regexes()
+	get_repos()
+	get_regexes()
 	validate_regexes()
