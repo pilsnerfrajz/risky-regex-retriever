@@ -49,7 +49,7 @@ def get_regexes():
 	base = 'https://api.github.com/search/code?q='
 	search_filter = ' in:file language:JavaScript'
 	repo_list = []
-	with open("search_results.txt", "r") as f:
+	with open("outputs/search_results.txt", "r") as f:
 		repo_list = [line.strip() for line in f if line.strip()]
 		
 	regex_set = set()
